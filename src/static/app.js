@@ -304,6 +304,38 @@ document.addEventListener("DOMContentLoaded", () => {
     return details.schedule;
   }
 
+  function buildShareContent(activityName, formattedSchedule) {
+    const activityUrl = `${window.location.origin}${window.location.pathname}?activity=${encodeURIComponent(activityName)}`;
+    const shareTitle = `${activityName} at Mergington High School`;
+    const shareText = `Check out "${activityName}" at Mergington High School. Schedule: ${formattedSchedule}.`;
+
+    return { activityUrl, shareTitle, shareText };
+  }
+
+  function getSocialShareUrl(platform, shareContent) {
+    const encodedUrl = encodeURIComponent(shareContent.activityUrl);
+    const encodedText = encodeURIComponent(shareContent.shareText);
+    const encodedTitle = encodeURIComponent(shareContent.shareTitle);
+
+    if (platform === "facebook") {
+      return `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}&quote=${encodedText}`;
+    }
+
+    if (platform === "x") {
+      return `https://twitter.com/intent/tweet?text=${encodedText}&url=${encodedUrl}`;
+    }
+
+    if (platform === "whatsapp") {
+      return `https://wa.me/?text=${encodedText}%20${encodedUrl}`;
+    }
+
+    if (platform === "email") {
+      return `mailto:?subject=${encodedTitle}&body=${encodedText}%0A${encodedUrl}`;
+    }
+
+    return null;
+  }
+
   // Function to determine activity type (this would ideally come from backend)
   function getActivityType(activityName, description) {
     const name = activityName.toLowerCase();
@@ -569,6 +601,15 @@ document.addEventListener("DOMContentLoaded", () => {
         `
         }
       </div>
+      <div class="share-actions">
+        <span class="share-label">Share with friends:</span>
+        <div class="share-buttons">
+          <button class="share-button share-facebook" data-platform="facebook" data-activity="${name}">Facebook</button>
+          <button class="share-button share-x" data-platform="x" data-activity="${name}">X</button>
+          <button class="share-button share-whatsapp" data-platform="whatsapp" data-activity="${name}">WhatsApp</button>
+          <button class="share-button share-email" data-platform="email" data-activity="${name}">Email</button>
+        </div>
+      </div>
     `;
 
     // Add click handlers for delete buttons
@@ -586,6 +627,27 @@ document.addEventListener("DOMContentLoaded", () => {
         });
       }
     }
+
+    const shareButtons = activityCard.querySelectorAll(".share-button");
+    shareButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        const platform = button.dataset.platform;
+        const shareContent = buildShareContent(name, formattedSchedule);
+        const shareUrl = getSocialShareUrl(platform, shareContent);
+
+        if (!shareUrl) {
+          showMessage("Sharing option is currently unavailable.", "error");
+          return;
+        }
+
+        if (platform === "email") {
+          window.location.href = shareUrl;
+          return;
+        }
+
+        window.open(shareUrl, "_blank", "noopener,noreferrer");
+      });
+    });
 
     activitiesList.appendChild(activityCard);
   }
